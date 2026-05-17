@@ -1,8 +1,11 @@
 # IA_edge_tts — TTS sincronizado con SRT usando Microsoft Edge TTS
 
-Script para generar audio TTS (Text-to-Speech) perfectamente sincronizado con un archivo SRT. Soporta traducción offline y el audio final tiene **exactamente la misma duración** que el audio original de referencia.
+Script para convertir texto a voz usando Microsoft Edge TTS. Tiene dos modos de uso:
 
-Dos modos principales:
+**Modo texto simple** — convierte texto directo o un archivo `.txt` a audio WAV, sin necesidad de SRT ni video.
+
+**Modo SRT (sincronizado con video)** — genera audio perfectamente sincronizado con un archivo SRT. El audio final tiene **exactamente la misma duración** que el audio original de referencia. Soporta traducción offline.
+
 - **Solo TTS** — lee el SRT en el idioma que ya tiene, con la voz que elijas
 - **Traducción + TTS** — traduce el SRT a otro idioma offline y genera el audio sincronizado
 
@@ -85,23 +88,30 @@ Al final concatena todo y hace un recorte/relleno final para garantizar la durac
 
 ## Argumentos
 
-### Requerido
+### Modo texto simple (sin SRT)
 
 | Argumento | Descripción |
 |-----------|-------------|
-| `--sub ARCHIVO.srt` | Archivo SRT de entrada |
+| `--text TEXTO` | Texto directo a convertir en audio. Ejemplo: `--text "Hola mundo"` |
+| `--txt-file ARCHIVO.txt` | Archivo `.txt` a convertir en audio. Ejemplo: `--txt-file mi_texto.txt` |
 
-### Opcionales
+### Modo SRT
+
+| Argumento | Descripción |
+|-----------|-------------|
+| `--sub ARCHIVO.srt` | Archivo SRT de entrada (requerido en modo SRT) |
+
+### Opcionales (ambos modos)
 
 | Argumento | Default | Descripción |
 |-----------|---------|-------------|
-| `--audio ARCHIVO.wav` | None | Audio original para medir duración total exacta. Si no se indica, se usa el tiempo del último segmento del SRT |
-| `-o`, `--output SALIDA.wav` | auto | Nombre del WAV de salida. Default: `<nombre_srt>_<idioma>.wav` |
-| `--translate FROM TO` | None | Traducir el SRT antes del TTS. Ejemplo: `--translate es en` |
-| `--voice NOMBRE_VOZ` | auto | Voz Edge TTS a usar. Si no se especifica, se elige automáticamente según el idioma destino de `--translate` |
-| `--max-speed N` | `1.9` | Velocidad máxima para comprimir segmentos largos. Rango recomendado: 1.5 – 2.0 |
-| `--min-speed N` | `0.8` | Velocidad mínima para expandir segmentos cortos. Rango recomendado: 0.7 – 1.0 |
-| `--keep-segments` | False | Guardar los WAV individuales de cada segmento en `<nombre_salida>_segments/` |
+| `--voice NOMBRE_VOZ` | `es-MX-DaliaNeural` | Voz Edge TTS a usar. Si no se especifica, se elige automáticamente según el idioma destino de `--translate` |
+| `-o`, `--output SALIDA.wav` | auto | Nombre del WAV de salida. Default: `<fuente>_tts.wav` |
+| `--translate FROM TO` | None | (Solo modo SRT) Traducir el SRT antes del TTS. Ejemplo: `--translate es en` |
+| `--audio ARCHIVO.wav` | None | (Solo modo SRT) Audio original para medir duración total exacta. Si no se indica, se usa el tiempo del último segmento del SRT |
+| `--max-speed N` | `1.9` | (Solo modo SRT) Velocidad máxima para comprimir segmentos largos. Rango recomendado: 1.5 – 2.0 |
+| `--min-speed N` | `0.8` | (Solo modo SRT) Velocidad mínima para expandir segmentos cortos. Rango recomendado: 0.7 – 1.0 |
+| `--keep-segments` | False | (Solo modo SRT) Guardar los WAV individuales de cada segmento en `<nombre_salida>_segments/` |
 
 ---
 
@@ -109,6 +119,11 @@ Al final concatena todo y hace un recorte/relleno final para garantizar la durac
 
 Si no se especifica `-o`, el nombre se genera automáticamente:
 
+**Modo texto simple:**
+- Con `--txt-file mi_texto.txt` → `mi_texto_tts.wav`
+- Con `--text "..."` → `texto_tts.wav`
+
+**Modo SRT:**
 - Con `--translate es en` → `<nombre_srt>_en.wav` y `<nombre_srt>_en.srt`
 - Sin `--translate` → `<nombre_srt>_tts.wav`
 
@@ -908,7 +923,37 @@ Edge TTS ofrece más de **400 voces neuronales** en más de 100 idiomas y varian
 
 ## Ejemplos
 
-### Solo TTS sin traducir
+### Texto simple — directo desde la terminal
+
+```bash
+# Voz por defecto (es-MX-DaliaNeural), salida automática: texto_tts.wav
+python3.12 IA_edge_tts.py --text "Hola, esto es una prueba de voz."
+
+# Con voz y salida específica
+python3.12 IA_edge_tts.py --text "Buenos días a todos." \
+    --voice es-MX-JorgeNeural -o saludo.wav
+
+# En inglés
+python3.12 IA_edge_tts.py --text "Hello, this is a voice test." \
+    --voice en-US-AriaNeural -o hello.wav
+```
+
+### Texto simple — desde un archivo .txt
+
+```bash
+# Voz por defecto, salida automática: mi_texto_tts.wav
+python3.12 IA_edge_tts.py --txt-file mi_texto.txt
+
+# Con voz y salida específica
+python3.12 IA_edge_tts.py --txt-file mi_texto.txt \
+    --voice es-MX-JorgeNeural -o narracion.wav
+
+# Texto largo en inglés
+python3.12 IA_edge_tts.py --txt-file article.txt \
+    --voice en-US-GuyNeural -o article_audio.wav
+```
+
+### Modo SRT — solo TTS sin traducir
 
 ```bash
 # Voz inglés por defecto
@@ -919,7 +964,7 @@ python3.12 IA_edge_tts.py --sub ./subs/video.srt --audio video.wav \
     -o video_tts.wav --voice es-MX-JorgeNeural
 ```
 
-### Traducir y generar TTS
+### Modo SRT — traducir y generar TTS
 
 ```bash
 # Español → inglés (voz automática: en-US-AriaNeural)
@@ -940,14 +985,14 @@ python3.12 IA_edge_tts.py --translate es ja \
     --sub ./subs/video.srt --audio video.wav -o video_ja.wav
 ```
 
-### Sin audio original (duración tomada del SRT)
+### Modo SRT — sin audio original (duración tomada del SRT)
 
 ```bash
 python3.12 IA_edge_tts.py --translate es en \
     --sub ./subs/video.srt -o video_en.wav
 ```
 
-### Guardar segmentos individuales
+### Modo SRT — guardar segmentos individuales
 
 ```bash
 python3.12 IA_edge_tts.py --translate es en \
@@ -956,7 +1001,7 @@ python3.12 IA_edge_tts.py --translate es en \
 # → genera video_en_segments/seg_0000.wav, seg_0001.wav, ...
 ```
 
-### Ajustar límites de velocidad
+### Modo SRT — ajustar límites de velocidad
 
 ```bash
 # Más permisivo (comprime hasta 2.5x si el segmento es muy largo)
